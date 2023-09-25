@@ -218,7 +218,7 @@ def get_params(system,planet,published=True,target=None):
 
 def create_light_curve(target, author, sector, period=None, duration=None, tc=None, targetname=None, 
     exposure = None,multisector = False, save = False, plot=True, binlc=False, binwidth = None, auto=False,
-    system = None, planet = None, qualityFlag = False, depth = None, published = True):
+    system = None, planet = None, qualityFlag = False, depth = None, published = True, omit_transit_index=None):
     
     '''
     Create light curve files - currently for TESS only. If only a single sector is needed, use 
@@ -243,6 +243,7 @@ def create_light_curve(target, author, sector, period=None, duration=None, tc=No
     quality flag: if true only uses Lightkurve data that has zero bad quality flags. good for removing major spikes
     depth:
     published: Boolean for whether or not the planet has been published. Reverts to ExoFOP if false.
+    omit_transit_index: the index of the transit(s) you wish to remove from the full lightcurve files
     '''
     
     ############## 
@@ -342,11 +343,15 @@ def create_light_curve(target, author, sector, period=None, duration=None, tc=No
         in_transit = np.where((phase>-transit_size_phase/2) & (phase<transit_size_phase/2))
         out_of_transit = np.where(~((phase>-transit_size_phase/2) & (phase<transit_size_phase/2)))   
     
+    in_transit = np.array(in_transit) # turning in_transit into an array from a one-element tuple
+
     #Separating the individual transits
     transit_times = []
     lc_transits = []
     array_names = []
     in_transit_n = []
+    omit_transit_mintimeindex = []
+    omit_transit_maxtimeindex = []
     floored_time = np.floor(((time)-tc)/period)
     unique_epochs = np.unique(floored_time)
     
@@ -358,20 +363,31 @@ def create_light_curve(target, author, sector, period=None, duration=None, tc=No
     #print('transit_times: ', transit_times)
     for j in transit_times:                  #Only including transits within the observation timeframe
         if j > time[0] and j < time[-1]:
-            lc_transits.append(j)   
+            lc_transits.append(j)
     #print('lc_transits: ', lc_transits)
     for i in lc_transits:                        
         index = lc_transits.index(i)         #Creating an array for naming each available transit
-        transit_name = 'in_transit_%s' % index
-        array_names.append(transit_name)
+        if index != omit_transit_index:
+            transit_name = 'in_transit_%s' % index
+            array_names.append(transit_name)
     
         
-        #Creating an array for where each transit can be found
-        #in_transit_n.append(np.where((time>i-3/2*transit_duration-buffer) & (time<i+3/2*transit_duration+buffer)))  
-        low_cut = (1.5*transit_duration-buffer)/24.
-        hi_cut = (1.5*transit_duration+buffer)/24.
+            #Creating an array for where each transit can be found
+            #in_transit_n.append(np.where((time>i-3/2*transit_duration-buffer) & (time<i+3/2*transit_duration+buffer)))  
+            low_cut = (1.5*transit_duration-buffer)/24.
+            hi_cut = (1.5*transit_duration+buffer)/24.
         
-        in_transit_n.append(np.where((time>i-low_cut) & (time<i+hi_cut)))
+            in_transit_n.append(np.where((time>i-low_cut) & (time<i+hi_cut)))
+        elif index == omit_transit_index:
+            # saving the min and max indices of the transits to be omitted
+            low_cut = (1.5*transit_duration-buffer)/24.
+            hi_cut = (1.5*transit_duration+buffer)/24.
+
+            omit_transit_mintimeindex.append(np.min(np.where((time>i-low_cut) & (time<i+hi_cut))))
+            omit_transit_maxtimeindex.append(np.max(np.where((time>i-low_cut) & (time<i+hi_cut))))
+    if omit_transit_index != None:
+        for i in range(len(omit_transit_mintimeindex)):
+            in_transit = np.delete(in_transit, range(omit_transit_mintimeindex[i], omit_transit_maxtimeindex[i]))
     
     #print('array_names: ',array_names)
     #print('in_transit_n: ', in_transit_n)
