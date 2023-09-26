@@ -343,7 +343,7 @@ def create_light_curve(target, author, sector, period=None, duration=None, tc=No
         in_transit = np.where((phase>-transit_size_phase/2) & (phase<transit_size_phase/2))
         out_of_transit = np.where(~((phase>-transit_size_phase/2) & (phase<transit_size_phase/2)))   
     
-    in_transit = np.array(in_transit) # turning in_transit into an array from a one-element tuple
+    in_transit_array = np.array(in_transit) # turning in_transit into an array from a one-element tuple
 
     #Separating the individual transits
     transit_times = []
@@ -365,8 +365,8 @@ def create_light_curve(target, author, sector, period=None, duration=None, tc=No
         if j > time[0] and j < time[-1]:
             lc_transits.append(j)
     #print('lc_transits: ', lc_transits)
-    for i in lc_transits:                        
-        index = lc_transits.index(i)         #Creating an array for naming each available transit
+    for current_time in lc_transits:                        
+        index = lc_transits.index(current_time)         #Creating an array for naming each available transit
         if index != omit_transit_index:
             transit_name = 'in_transit_%s' % index
             array_names.append(transit_name)
@@ -377,17 +377,19 @@ def create_light_curve(target, author, sector, period=None, duration=None, tc=No
             low_cut = (1.5*transit_duration-buffer)/24.
             hi_cut = (1.5*transit_duration+buffer)/24.
         
-            in_transit_n.append(np.where((time>i-low_cut) & (time<i+hi_cut)))
+            in_transit_n.append(np.where((time>current_time-low_cut) & (time<current_time+hi_cut)))
         elif index == omit_transit_index:
             # saving the min and max indices of the transits to be omitted
             low_cut = (1.5*transit_duration-buffer)/24.
             hi_cut = (1.5*transit_duration+buffer)/24.
 
-            omit_transit_mintimeindex.append(np.min(np.where((time>i-low_cut) & (time<i+hi_cut))))
-            omit_transit_maxtimeindex.append(np.max(np.where((time>i-low_cut) & (time<i+hi_cut))))
+            omit_transit_mintimeindex.append(np.min(np.where((time>current_time-low_cut) & (time<current_time+hi_cut))))
+            omit_transit_maxtimeindex.append(np.max(np.where((time>current_time-low_cut) & (time<current_time+hi_cut))))
     if omit_transit_index != None:
         for i in range(len(omit_transit_mintimeindex)):
-            in_transit = np.delete(in_transit, range(omit_transit_mintimeindex[i], omit_transit_maxtimeindex[i]))
+            in_transit_array = np.setdiff1d(in_transit_array, range(omit_transit_mintimeindex[i], omit_transit_maxtimeindex[i]))
+    
+    in_transit = in_transit_array.tolist()
     
     #print('array_names: ',array_names)
     #print('in_transit_n: ', in_transit_n)
@@ -399,7 +401,7 @@ def create_light_curve(target, author, sector, period=None, duration=None, tc=No
     # per-point error calculation - specific to TESS
     error_value = scipy.stats.median_abs_deviation(flat_flux[out_of_transit],nan_policy='omit')/0.68   #error per point
     print('per-point error value', error_value)
-    errors = np.array(np.full((len(time), 1), error_value, dtype=float))
+    errors = np.full((len(time), 1), error_value, dtype=float)
     
     # comparison of rms to transit depth
     if auto == True:
