@@ -422,7 +422,7 @@ def create_light_curve(target, author, sector, period=None, duration=None, tc=No
 
         #Plotting the light curve of only the transits
         fig2, ax2 = plt.subplots(figsize=(16, 8))
-        plt.scatter(time[in_transit], flat_flux[in_transit])
+        plt.scatter(time[tuple(in_transit)], flat_flux[tuple(in_transit)])
         plt.title("%s: Sector %s, %ss %s - Individual Transit Flux" % (targetname,sector,int(exposure),binflag))
         plt.xlabel("Time - 2457000 [BTJD days]")
         plt.ylabel("Normalized Flux")
@@ -444,7 +444,7 @@ def create_light_curve(target, author, sector, period=None, duration=None, tc=No
 
         #Plotting the phase folded light curve to easily observe transit
         fig4, ax4 = plt.subplots(figsize=(16, 8))
-        plt.scatter(phase[in_transit], flat_flux[in_transit])
+        plt.scatter(phase[tuple(in_transit)], flat_flux[tuple(in_transit)])
         plt.title("%s: Sector %s, %ss %s - Phase Folded Light Curve" % (targetname,sector,int(exposure),binflag)) 
         plt.xlabel("Phase")
         plt.ylabel("Normalized Fluxf")
@@ -457,27 +457,21 @@ def create_light_curve(target, author, sector, period=None, duration=None, tc=No
     # of the transits by themselves
     
     if save == True:
-        
-        startdir = os.getcwd()
-        
-        if os.path.exists('./lc_output'):
-            os.chdir('./lc_output')
-        else:
+
+        if os.path.exists('./lc_output') == False:
             os.mkdir('./lc_output')
-            os.chdir('./lc_output')
         
         fig4.savefig('%s_S%s_phase_folded_%ss%s.png' % (targetname,sector,int(exposure),binflag),dpi=400, bbox_inches="tight",format='png',facecolor='white')
         
-        np.savetxt('n%s.TESS.TESS.%sFullNotFlat.S%s.%ss%s.dat' % (date,targetname, sector,int(exposure),binflag), \
+        np.savetxt('lc_output/n%s.TESS.TESS.%sFullNotFlat.S%s.%ss%s.dat' % (date,targetname, sector,int(exposure),binflag), \
                    np.c_[time, flux, errors], delimiter=' ') 
-        np.savetxt('n%s.TESS.TESS.%sFullFlat.S%s.%ss%s.dat' % (date,targetname, sector,int(exposure),binflag), \
+        np.savetxt('lc_output/n%s.TESS.TESS.%sFullFlat.S%s.%ss%s.dat' % (date,targetname, sector,int(exposure),binflag), \
                    np.c_[time, flat_flux, errors], delimiter=' ') 
-        np.savetxt('n%s.TESS.TESS.%sSlimFlat.S%s.%ss%s.dat' % (date,targetname, sector,int(exposure),binflag), \
-                   np.c_[time[in_transit], flat_flux[in_transit], errors[in_transit]], delimiter=' ')    
+        np.savetxt('lc_output/n%s.TESS.TESS.%sSlimFlat.S%s.%ss%s.dat' % (date,targetname, sector,int(exposure),binflag), \
+                   np.c_[time[tuple(in_transit)], flat_flux[tuple(in_transit)], errors[tuple(in_transit)]], delimiter=' ')    
         
         # save individual transits to separate files
         for key, value in final_transits.items():
             newvalue = np.array(value)
-            np.savetxt('n%s.TESS.TESS.%sSlimFlat.S%s.%ss%s.%s.dat' % (date,targetname, sector,int(exposure),binflag, key), \
+            np.savetxt('lc_output/n%s.TESS.TESS.%sSlimFlat.S%s.%ss%s.%s.dat' % (date,targetname, sector,int(exposure),binflag, key), \
                        np.c_[(phase[newvalue[0,:]]*period), flat_flux[newvalue[0,:]]], delimiter=' ') 
-        os.chdir(startdir)
