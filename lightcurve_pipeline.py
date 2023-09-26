@@ -461,7 +461,7 @@ def create_light_curve(target, author, sector, period=None, duration=None, tc=No
         if os.path.exists('./lc_output') == False:
             os.mkdir('./lc_output')
         
-        fig4.savefig('%s_S%s_phase_folded_%ss%s.png' % (targetname,sector,int(exposure),binflag),dpi=400, bbox_inches="tight",format='png',facecolor='white')
+        fig4.savefig('lc_output/%s_S%s_phase_folded_%ss%s.png' % (targetname,sector,int(exposure),binflag),dpi=400, bbox_inches="tight",format='png',facecolor='white')
         
         np.savetxt('lc_output/n%s.TESS.TESS.%sFullNotFlat.S%s.%ss%s.dat' % (date,targetname, sector,int(exposure),binflag), \
                    np.c_[time, flux, errors], delimiter=' ') 
