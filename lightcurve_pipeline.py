@@ -367,10 +367,9 @@ def create_light_curve(target, author, sector, period=None, duration=None, tc=No
     #print('lc_transits: ', lc_transits)
     for current_time in lc_transits:                        
         index = lc_transits.index(current_time)         #Creating an array for naming each available transit
-        if index != omit_transit_index:
+        if index != omit_transit_index: # only append new names if it isn't an omitted transit
             transit_name = 'in_transit_%s' % index
             array_names.append(transit_name)
-    
         
             #Creating an array for where each transit can be found
             #in_transit_n.append(np.where((time>i-3/2*transit_duration-buffer) & (time<i+3/2*transit_duration+buffer)))  
@@ -387,9 +386,13 @@ def create_light_curve(target, author, sector, period=None, duration=None, tc=No
             omit_transit_maxtimeindex.append(np.max(np.where((time>current_time-low_cut) & (time<current_time+hi_cut))))
     if omit_transit_index != None:
         for i in range(len(omit_transit_mintimeindex)):
+            # cutting individual bad transits from the array of "in transit" indices
             in_transit_array = np.setdiff1d(in_transit_array, range(omit_transit_mintimeindex[i], omit_transit_maxtimeindex[i]))
     
     in_transit = in_transit_array.tolist()
+    # the following if statement is to mute a warning. This may(?) have to be changed in the future and there might be a better way to do this
+    if omit_transit_index == None:
+        in_transit = tuple(in_transit)
     
     #print('array_names: ',array_names)
     #print('in_transit_n: ', in_transit_n)
