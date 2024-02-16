@@ -219,7 +219,7 @@ def get_params(system,planet,published=True,target=None):
 def create_light_curve(target, author, sector, period=None, duration=None, tc=None, targetname=None, 
     exposure = None,multisector = False, save = False, plot=True, binlc=False, binwidth = None, auto=False,
     system = None, planet = None, qualityFlag = False, depth = None, published = True, omit_transit_index=None,
-    outputdir = 'None', outputfiles = 'all'):
+    keep_secondary_eclipse = False, ecosw = 'circular', t14s = None, outputdir = 'None', outputfiles = 'all'):
     
     '''
     Create light curve files - currently for TESS only. If only a single sector is needed, use 
@@ -245,6 +245,9 @@ def create_light_curve(target, author, sector, period=None, duration=None, tc=No
     depth:
     published: Boolean for whether or not the planet has been published. Reverts to ExoFOP if false.
     omit_transit_index: the index of the transit(s) you wish to remove from the full lightcurve files
+    keep_secondary_eclipse: a boolean to choose whether or not to mask the secondary eclipse in the flattening and keep it in the chopped lightcurve. If True, ecosw and t14s must also be given
+    ecosw: the product of the planet's eccentricity and the cosine of omega. If 'circular' is passed, ecosw will be zero
+    t14s: the secondary eclipse duration as output from exofast (in days). If None, then the transit duration will be used
     outputdir: A string of the path to the directory where the files will be saved
     outputfiles: An array of the files that you wish to be generated. Options include: plot, fullnotflat, fullflat, fullnotrans, slimflat, and individual. Defaults to 'all'
     '''
@@ -312,6 +315,9 @@ def create_light_curve(target, author, sector, period=None, duration=None, tc=No
     phase = (time-tc)/period-np.floor((time-tc)/period)
     gt5 = phase > 0.5
     phase[gt5] = phase[gt5]-1.0
+
+    # Defining eclipse phase to inspect secondary eclipses
+    eclipse_phase = (time-tc)/period-np.floor((time-tc)/period)
     
     #Determining the size of the phase transit
     transit_size_phase = ((transit_duration/24)/period+(buffer/24)/period)*3
@@ -319,10 +325,23 @@ def create_light_curve(target, author, sector, period=None, duration=None, tc=No
     #Indicating where transits are located within the light curve
     in_transit = np.where((phase>-transit_size_phase/2) & (phase<transit_size_phase/2))
     out_of_transit = np.where(~((phase>-transit_size_phase/2) & (phase<transit_size_phase/2)))
+
+    # Optionally masking out the secondary eclipse
+    if keep_secondary_eclipse == True:
+        if ecosw == 'circular':
+            ecosw = 0
+        time_eclipse = 0.5 * (1 + 4*ecosw)
+        if t14s == None:
+            in_eclipse = np.where((eclipse_phase > (time_eclipse - transit_size_phase/2)) & (eclipse_phase < (time_eclipse + transit_size_phase/2)))
+        else:
+            eclipse_size_phase = (t14s/period+(buffer/24)/period)*3
+            in_eclipse = np.where((eclipse_phase > (time_eclipse - eclipse_size_phase/2)) & (eclipse_phase < (time_eclipse + eclipse_size_phase/2)))
     
     #Creating masks to exclude transits from the flattening process
     input_mask = np.ones_like(phase, dtype=bool)
     input_mask[in_transit] = False 
+    if keep_secondary_eclipse == True:
+        input_mask[in_eclipse] = False
     
     #Flattening the light curve for any stellar variability
     flatten_masked, metadata = choosekeplersplinev2(time, flux, input_mask = input_mask, return_metadata = True)
@@ -456,11 +475,22 @@ def create_light_curve(target, author, sector, period=None, duration=None, tc=No
         plt.ylabel("Normalized Fluxf")
         #plt.xlim(min(phase[in_transit]),max(phase[in_transit]))
         #plt.ylim(0.99,1.01)
-        
+
+        # Plotting the secondary eclipses
+        if keep_secondary_eclipse == True:
+            fig5, ax5 = plt.subplots(figsize=(16, 8))
+            plt.scatter(eclipse_phase[in_eclipse], flat_flux[in_eclipse])
+            plt.title("%s: Sector %s, %ss %s - Secondary Eclipse" % (targetname,sector,int(exposure),binflag))
+            plt.xlabel("Time - 2457000 [BTJD days]")
+            plt.ylabel("Normalized Flux")
         
 
     # Saving data files of masked light curve, phase folded light curve, and light curve 
     # of the transits by themselves
+    
+    if keep_secondary_eclipse == True:
+        in_eclipse = (in_eclipse[0].tolist(), ) # changing in_eclipse from a numpy array to a list to broadcast it together with in_transit
+        in_transit = (in_transit[0] + in_eclipse[0],) # include the secondary eclipse in the saved slimflat files
     
     if save == True:
 
