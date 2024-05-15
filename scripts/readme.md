@@ -6,12 +6,12 @@ Requires Andrew Vanderburg's keplersplinev2 to run: https://github.com/avanderbu
 
 ## get_FeH.ipynb
 
-stuff
+A script to generate a metallicity prior from the listed spectroscopic metallicities on ExoFOP or from a TRES data file.
 
 ## remake_pdf.ipynb
 
-more stuff
+Remakes the posterior distribution functions (PDFs) from EXOFAST outputs for fits that are bimodal in stellar mass and age or for the radii of planets in grazing transit configurations.
 
 ## RV_mini_pipeline.ipynb
 
-different stuff
+A very simple and incomplete script that takes a TRES or CHIRON data file and generates an RV file in the format EXOFAST requires for fits.
