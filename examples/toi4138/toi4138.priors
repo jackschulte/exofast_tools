@@ -1,0 +1,17 @@
+#### TICv8 ####
+mstar 1.11
+rstar 1.89
+teff  6019
+##############
+av 0 -1 0 0.068510000
+# NOTE: the Gaia DR2 parallax (1.9486000) and uncertainty (0.0197000) has been corrected as prescribed in Lindegren+ (2018)
+#parallax 1.97860 0.02989
+# NOTE: the Gaia EDR3 parallax (1.9695000) has been corrected by subtracting -0.044960088 mas according to the Lindegren+ 2020 prescription
+parallax 2.01446 0.01970
+# wide Gaussian prior
+feh 0.03 0.09
+# b
+tc_0 2459660.607824
+period_0 3.6600319544359
+p_0 0.088032495855126694
+cosi_0 0.001
