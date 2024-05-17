@@ -15,3 +15,7 @@ Remakes the posterior distribution functions (PDFs) from EXOFAST outputs for fit
 ## RV_mini_pipeline.ipynb
 
 A very simple and incomplete script that takes a TRES or CHIRON data file and generates an RV file in the format EXOFAST requires for fits.
+
+## get_dilution.ipynb
+
+A short script that generates a dilution prior for a source observed by TESS by querying the TICv8.2 catalog using Vizier.
