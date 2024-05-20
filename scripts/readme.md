@@ -19,3 +19,7 @@ A very simple and incomplete script that takes a TRES or CHIRON data file and ge
 ## get_dilution.ipynb
 
 A short script that generates a dilution prior for a source observed by TESS by querying the TICv8.2 catalog using Vizier.
+
+## generate_priors_TOI.ipynb
+
+A script that generates a spectroscopic metallicity prior, TESS dilution prior, and planetary ephemeris starting points for a given TESS Object of Interest.
