@@ -56,13 +56,14 @@ def grab_metallicity(ticid, sigma=1, weighted=True):
 
     return mean_feh, width
 
-def grab_all_priors(TOI, feh_sigma=1, feh_weighted=True):
+def grab_all_priors(TOI, feh_sigma=1, feh_weighted=True, outpath='.'):
     '''
     Grabs metallicity and dilution priors and ephemeris starting points for a given TOI and outputs it into a text file in EXOFASTv2 format.
 
     TOI: the TOI identifier for the target. E.g. 'TOI-3919'
     feh_sigma: the number of standard deviations to use as your metallicity prior width
     feh_weighted: whether or not to weight your average metallicity by the spectral SNR
+    outpath: the path to the generated prior text file. Defaults to the current working directory.
     '''
 
     # Collect TICID and starting points
@@ -83,5 +84,7 @@ def grab_all_priors(TOI, feh_sigma=1, feh_weighted=True):
 
     priorstring = f'# spectroscopic metallicity\nfeh {feh} {feh_width}\n# b\ntc_0 {tc}\nperiod_0 {period}\np_0 {rp_rstar}\ncosi_0 0.001\n# dilution\ndilute_0 0.0 {dilute_sigma}'
 
-    with open(f'priors_{TOI}.txt', "w") as text_file:
+    if outpath[-1] == '/':
+        outpath = outpath[:-1]
+    with open(f'{outpath}/priors_{TOI}.txt', "w") as text_file:
         text_file.write(priorstring)
