@@ -79,7 +79,7 @@ def remake_rvfile(path, units, output_filename='output.rv', verbose=False, downl
     data_new = pd.DataFrame({'Time (BJD)': input_data.BJD_UTC, 'RV (m/s)': vrad_units.to(u.m/u.s), 'RV error (m/s)': svrad_units.to(u.m/u.s)})
 
     with open(output_filename, 'w') as file:
-        file.write('# Time (BJD), RV (m/s), RV error (m/s)\n')
+        file.write('# BJD, RV, RV_error\n')
         data_new.to_csv(file, sep=' ', index=False, header=False)
 
     if verbose==True:
