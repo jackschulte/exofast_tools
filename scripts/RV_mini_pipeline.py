@@ -1,10 +1,14 @@
 import pandas as pd
 import numpy as np
 import astropy.units as u
-import requests
+from selenium import webdriver
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.by import By
+import time
+from selenium.webdriver.chrome.options import Options
 
 
-def download_TRES_data(ticid, username, password, output_filename='tres_rvs.txt', verbose=False):
+def download_TRES_data(ticid, username, password, output_filename='tres_rvs.txt', verbose=False, instrument='tres'):
     '''
     Download TRES or CHIRON data from Lars Buchhave's TRES website. It seems like this will download multi-orders only if they exist, but please check to be sure.
 
@@ -15,46 +19,87 @@ def download_TRES_data(ticid, username, password, output_filename='tres_rvs.txt'
     verbose: whether or not to print when login/download are successful.
     '''
 
-    # URL of the login page
-    login_url = 'http://tess.exoplanets.dk/Login.aspx'
+    # Configure WebDriver (e.g., Chrome)
+    chrome_options = Options()
+    chrome_options.add_argument("--headless")  # Enable headless mode
+    chrome_options.add_argument("--no-sandbox")  # Bypass OS security model (useful for Docker)
+    chrome_options.add_argument("--disable-dev-shm-usage")  # Overcome limited resource problems
 
-    # convert ticid to T0 number
-    T0_id = 'T0' + ticid.zfill(9)
-    # URL of the text file you want to download
-    file_url = f'http://exoplanets.dk/uploads/temp/{T0_id}.RV.txt'
-
-    # Your login credentials
-    payload = {
-        'username': username,
-        'password': password
-    }
-
-    # Create a session to persist the login state
-    session = requests.Session()
-
-    # Perform the login
-    response = session.post(login_url, data=payload)
-
-    # Check if the login was successful
-    if response.status_code == 200:
-        if verbose==True:
-            print("Login successful!")
-        
-        # Download the file
-        file_response = session.get(file_url)
-        
-        if file_response.status_code == 200:
-            # Save the file locally
-            with open(output_filename, 'wb') as file:
-                file.write(file_response.content)
-            if verbose==True:
-                print("File downloaded successfully!")
-        else:
-            print("Failed to download the file.")
+    if verbose==True:
+        driver = webdriver.Chrome()
     else:
-        print("Login failed.")
+        driver = webdriver.Chrome(options=chrome_options)
+    
 
-def remake_rvfile(path, units, output_filename='output.rv', verbose=False, download_rvs = False, ticid=None, username=None, password=None):
+    # Open the login page
+    driver.get("http://tess.exoplanets.dk/Login.aspx")
+
+    # Find and fill out the login fields
+    username_field = driver.find_element(By.NAME, "ctl00$cpMainContent$tbUserName")
+    password_field = driver.find_element(By.NAME, "ctl00$cpMainContent$tbPassword")
+
+    username_field.send_keys(username)
+    password_field.send_keys(password)
+    password_field.send_keys(Keys.RETURN)
+
+    # Wait for login to complete and navigate to the target page
+    time.sleep(5)
+
+    # Navigate to the page with the search field
+    driver.get("http://tess.exoplanets.dk/Default.aspx")
+
+    # Find the search field and perform the search
+    search_field = driver.find_element(By.NAME, "ctl00$cpMainContent$tbSearch")
+
+    T0_id = 'T0' + ticid.zfill(9)
+    search_field.send_keys(T0_id)
+    search_field.send_keys(Keys.RETURN)
+
+    # Wait for the search results to load
+    time.sleep(5)
+
+    # Find the link with href containing "Candidate_Edit" (the page for an individual target)
+    links = driver.find_elements(By.TAG_NAME, "a")
+    candidate_edit_link = None
+    for link in links:
+        href = link.get_attribute("href")
+        if href and "Candidate_Edit" in href:
+            candidate_edit_link = href
+            break
+
+    # Check if we found the correct link and navigate to it
+    if candidate_edit_link:
+        driver.get(candidate_edit_link)
+    else:
+        print("Candidate_Edit link not found")
+        driver.quit()
+        exit()
+
+    # Wait for the page to load
+    time.sleep(5)
+
+    if instrument=='tres': # grabs multi-order TRES RVs from "high precision RV" button
+        spc_table_button = driver.find_element(By.NAME, 'ctl00$cpMainContent$Button10')
+    elif instrument=='chiron': # grabs multi-order CHIRON RVs from the top textfile instead
+        spc_table_button = driver.find_element(By.NAME, 'ctl00$cpMainContent$Button12')
+    spc_table_button.click() # this opens a second tab
+
+    # Wait for the page to load
+    time.sleep(5)
+
+    tabs = driver.window_handles 
+    driver.switch_to.window(tabs[1])
+
+    # You can extract text from a specific element or the entire page
+    rv_table = driver.find_element(By.TAG_NAME, 'body').text
+
+    with open(output_filename, 'w') as file:
+        file.write(rv_table)
+
+    # Quit the WebDriver
+    driver.quit()
+
+def remake_rvfile(path, units=u.km/u.s, output_filename='output.rv', verbose=False, download_rvs = False, ticid=None, username=None, password=None, instrument='tres'):
     '''
     Create a streamlined RV file from a TRES or CHIRON data file generated by Lars Buchhave's TESS website.
 
@@ -69,7 +114,7 @@ def remake_rvfile(path, units, output_filename='output.rv', verbose=False, downl
     '''
     
     if download_rvs == True:
-        download_TRES_data(ticid=ticid, username=username, password=password, output_filename=path, verbose=verbose)
+        download_TRES_data(ticid=ticid, username=username, password=password, output_filename=path, verbose=verbose, instrument=instrument)
 
     input_data = pd.read_csv(path, sep='\s+', header=0)
 

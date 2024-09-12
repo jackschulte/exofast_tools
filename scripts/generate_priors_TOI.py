@@ -7,6 +7,12 @@ import numpy as np
 import pandas as pd
 import astropy.units as u
 import requests
+from selenium import webdriver
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.by import By
+import time
+from io import StringIO
+from selenium.webdriver.chrome.options import Options
 
 def grab_dilution(ticid):
     '''
@@ -25,7 +31,7 @@ def grab_dilution(ticid):
 
     return dilute_sigma
 
-def grab_metallicity(ticid, sigma=1, weighted=True):
+def grab_metallicity(ticid, sigma=1, weighted=True, source='exofop', tres_username=None, tres_password=None, toi_id = None, verbose=False):
     '''
     Generates a metallicity prior from the mean and standard deviation of spectroscopic metallicities available on ExoFOP.
 
@@ -33,30 +39,112 @@ def grab_metallicity(ticid, sigma=1, weighted=True):
     sigma: The number of standard deviations that you would like as your prior width.
     weighted: boolean to choose whether or not the average metallicity is weighted by the SNR of the spectrum
     '''
+    if source == 'exofop':
+        url = 'https://exofop.ipac.caltech.edu/tess/target.php?id=' + ticid + '&json'
+        page = requests.get(url)
 
-    url = 'https://exofop.ipac.caltech.edu/tess/target.php?id=' + ticid + '&json'
-    page = requests.get(url)
+        n_feh = page.json()['stellar_parameters'][4]['prov_num']
 
-    n_feh = page.json()['stellar_parameters'][4]['prov_num']
+        feh = []
+        snr = []
+        for i in range(int(n_feh)):
+            feh.append(float(page.json()['stellar_parameters'][5+i]['met']))
+            snr.append(float(page.json()['stellar_parameters'][5+i]['snr']))
+        feh = np.array(feh)
+        snr = np.array(snr)
 
-    feh = []
-    snr = []
-    for i in range(int(n_feh)):
-        feh.append(float(page.json()['stellar_parameters'][5+i]['met']))
-        snr.append(float(page.json()['stellar_parameters'][5+i]['snr']))
-    feh = np.array(feh)
-    snr = np.array(snr)
+        if weighted==False:
+            mean_feh = feh.mean()
+        elif weighted==True:
+            mean_feh = np.average(feh, weights=snr)
+        width = sigma * np.std(feh)
+    elif source == 'tres':
+        # Configure WebDriver (e.g., Chrome)
+        chrome_options = Options()
+        chrome_options.add_argument("--headless")  # Enable headless mode
+        chrome_options.add_argument("--no-sandbox")  # Bypass OS security model (useful for Docker)
+        chrome_options.add_argument("--disable-dev-shm-usage")  # Overcome limited resource problems
 
-    if weighted==False:
-        mean_feh = feh.mean()
-    elif weighted==True:
-        mean_feh = np.average(feh, weights=snr)
-    width = sigma * np.std(feh)
+        if verbose==True:
+            driver = webdriver.Chrome()
+        else:
+            driver = webdriver.Chrome(options=chrome_options)
+        
+
+        # Open the login page
+        driver.get("http://tess.exoplanets.dk/Login.aspx")
+
+        # Find and fill out the login fields
+        username = driver.find_element(By.NAME, "ctl00$cpMainContent$tbUserName")
+        password = driver.find_element(By.NAME, "ctl00$cpMainContent$tbPassword")
+
+        username.send_keys(tres_username)
+        password.send_keys(tres_password)
+        password.send_keys(Keys.RETURN)
+
+        # Wait for login to complete and navigate to the target page
+        time.sleep(5)
+
+        # Navigate to the page with the search field
+        driver.get("http://tess.exoplanets.dk/Default.aspx")
+
+        # Find the search field and perform the search
+        search_field = driver.find_element(By.NAME, "ctl00$cpMainContent$tbSearch")
+        search_field.send_keys(toi_id)
+        search_field.send_keys(Keys.RETURN)
+
+        # Wait for the search results to load
+        time.sleep(5)
+
+        # Find the link with href containing "Candidate_Edit" (the page for an individual target)
+        links = driver.find_elements(By.TAG_NAME, "a")
+        candidate_edit_link = None
+        for link in links:
+            href = link.get_attribute("href")
+            if href and "Candidate_Edit" in href:
+                candidate_edit_link = href
+                break
+
+        # Check if we found the correct link and navigate to it
+        if candidate_edit_link:
+            driver.get(candidate_edit_link)
+        else:
+            print("Candidate_Edit link not found")
+            driver.quit()
+            exit()
+
+        # Wait for the page to load
+        time.sleep(5)
+
+        spc_table_button = driver.find_element(By.NAME, 'ctl00$cpMainContent$Button12')
+        spc_table_button.click() # this opens a second tab
+
+        # Wait for the page to load
+        time.sleep(5)
+
+        tabs = driver.window_handles 
+        driver.switch_to.window(tabs[1])
+
+        # You can extract text from a specific element or the entire page
+        spc_table = driver.find_element(By.TAG_NAME, 'body').text
+
+        # Create a DataFrame
+        data = StringIO(spc_table)
+        df = pd.read_csv(data, header=0, sep='\s+')
+        
+        if weighted==False:
+            mean_feh = df.mh.mean()
+        elif weighted==True:
+            mean_feh = np.average(df.mh, weights=df.SNRe)
+        width = sigma * np.std(df.mh)
+
+        # Quit the WebDriver
+        driver.quit()
     print(f'Spectroscopic [Fe/H] prior: {np.round(mean_feh, 4)} +/- {np.round(width,4)}')
 
     return mean_feh, width
 
-def grab_all_priors(TOI, feh_sigma=1, feh_weighted=True, outpath='.'):
+def grab_all_priors(TOI, feh_sigma=1, feh_weighted=True, outpath='.', source='exofop', tres_username=None, tres_password=None, verbose=False):
     '''
     Grabs metallicity and dilution priors and ephemeris starting points for a given TOI and outputs it into a text file in EXOFASTv2 format.
 
@@ -79,7 +167,7 @@ def grab_all_priors(TOI, feh_sigma=1, feh_weighted=True, outpath='.'):
     rp_rstar = np.sqrt(depth * 10**(-6))
 
     print(f'Starting points:\nTc = {tc}\nPeriod = {period}\nRp/Rs = {rp_rstar}')
-    feh, feh_width = grab_metallicity(ticid, sigma=feh_sigma, weighted=feh_weighted)
+    feh, feh_width = grab_metallicity(ticid, sigma=feh_sigma, weighted=feh_weighted, source=source, tres_username=tres_username, tres_password=tres_password, toi_id = TOI, verbose=verbose)
     dilute_sigma = grab_dilution(ticid)
 
     priorstring = f'# spectroscopic metallicity\nfeh {feh} {feh_width}\n# b\ntc_0 {tc}\nperiod_0 {period}\np_0 {rp_rstar}\ncosi_0 0.001\n# dilution\ndilute_0 0.0 {dilute_sigma}'
