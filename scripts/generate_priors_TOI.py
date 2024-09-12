@@ -131,12 +131,14 @@ def grab_metallicity(ticid, sigma=1, weighted=True, source='exofop', tres_userna
         # Create a DataFrame
         data = StringIO(spc_table)
         df = pd.read_csv(data, header=0, sep='\s+')
+        df.dropna(inplace=True)
+        df_spc = df[df.method=='SPC2.9']
         
         if weighted==False:
-            mean_feh = df.mh.mean()
+            mean_feh = df_spc.mh.mean()
         elif weighted==True:
-            mean_feh = np.average(df.mh, weights=df.SNRe)
-        width = sigma * np.std(df.mh)
+            mean_feh = np.average(df_spc.mh, weights=df_spc.SNRe)
+        width = sigma * np.std(df_spc.mh)
 
         # Quit the WebDriver
         driver.quit()
