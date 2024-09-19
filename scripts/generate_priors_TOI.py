@@ -37,7 +37,13 @@ def grab_metallicity(ticid, sigma=1, weighted=True, source='exofop', tres_userna
 
     TICID: The object's TESS Input Catalog identifier. Ex: for TIC 81247740, enter '81247740'
     sigma: The number of standard deviations that you would like as your prior width.
-    weighted: boolean to choose whether or not the average metallicity is weighted by the SNR of the spectrum
+    weighted: Boolean to choose whether or not the average metallicity is weighted by the SNR of the spectrum.
+    source: Either 'exofop' or 'tres'. 'exofop' pulls from the available metallicities on ExoFOP-TESS, while 'tres' pulls from Lars Buchhave's planet candidate site.
+    tres_username: Your username for tess.exoplanets.dk
+    tres_password: Your password for tess.exoplanets.dk
+    toi_id: The target's TOI id. Ex: 'TOI-1855'
+    verbose: A boolean to determine whether or not the program opens up the Chrome test browser to display what it's doing
+
     '''
     if source == 'exofop':
         url = 'https://exofop.ipac.caltech.edu/tess/target.php?id=' + ticid + '&json'
@@ -154,6 +160,11 @@ def grab_all_priors(TOI, feh_sigma=1, feh_weighted=True, outpath='.', source='ex
     feh_sigma: the number of standard deviations to use as your metallicity prior width
     feh_weighted: whether or not to weight your average metallicity by the spectral SNR
     outpath: the path to the generated prior text file. Defaults to the current working directory.
+    source: Either 'exofop' or 'tres'. 'exofop' pulls from the available metallicities on ExoFOP-TESS, while 'tres' pulls from Lars Buchhave's planet candidate site.
+    tres_username: Your username for tess.exoplanets.dk
+    tres_password: Your password for tess.exoplanets.dk
+    toi_id: The target's TOI id. Ex: 'TOI-1855'
+    verbose: A boolean to determine whether or not the program opens up the Chrome test browser to display what it's doing
     '''
 
     # Collect TICID and starting points

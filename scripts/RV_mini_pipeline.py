@@ -111,6 +111,7 @@ def remake_rvfile(path, units=u.km/u.s, output_filename='output.rv', verbose=Fal
     ticid: if download_rvs is True, the TIC identifier of the target must be provided.
     username: if download_rvs is True, your TRES/CHIRON site username must be provided.
     password: if download_rvs is True, your TRES/CHIRON site password must be provided.
+    instrument: Either 'tres' or 'chiron'. If 'tres', it will grab RVs using the 'high precision RVs' button.
     '''
     
     if download_rvs == True:
