@@ -152,11 +152,12 @@ def grab_metallicity(ticid, sigma=1, weighted=True, source='exofop', tres_userna
 
     return mean_feh, width
 
-def grab_all_priors(TOI, feh_sigma=1, feh_weighted=True, outpath='.', source='exofop', tres_username=None, tres_password=None, verbose=False):
+def grab_all_priors(TOI, tess_lcs, feh_sigma=1, feh_weighted=True, outpath='.', source='exofop', tres_username=None, tres_password=None, verbose=False):
     '''
     Grabs metallicity and dilution priors and ephemeris starting points for a given TOI and outputs it into a text file in EXOFASTv2 format.
 
     TOI: the TOI identifier for the target. E.g. 'TOI-3919'
+    tess_lcs: An array containing booleans to determine which lightcurve is a tess lightcurve by index. E.g. [1, 1, 0, 0, 1]
     feh_sigma: the number of standard deviations to use as your metallicity prior width
     feh_weighted: whether or not to weight your average metallicity by the spectral SNR
     outpath: the path to the generated prior text file. Defaults to the current working directory.
@@ -183,7 +184,14 @@ def grab_all_priors(TOI, feh_sigma=1, feh_weighted=True, outpath='.', source='ex
     feh, feh_width = grab_metallicity(ticid, sigma=feh_sigma, weighted=feh_weighted, source=source, tres_username=tres_username, tres_password=tres_password, toi_id = TOI, verbose=verbose)
     dilute_sigma = grab_dilution(ticid)
 
-    priorstring = f'# spectroscopic metallicity\nfeh {feh} {feh_width}\n# b\ntc_0 {tc}\nperiod_0 {period}\np_0 {rp_rstar}\ncosi_0 0.001\n# dilution\ndilute_0 0.0 {dilute_sigma}'
+    dilution_indices = [i for i, x in enumerate(tess_lcs)]
+    dilute_str = ''
+    for i in dilution_indices:
+        if i == 0:
+            dilute_str += f'dilute 0.0 {dilute_sigma}'
+        else:
+            dilute_str += f'\ndilute_{i} 0.0 {dilute_sigma}'
+    priorstring = f'# spectroscopic metallicity\nfeh {feh} {feh_width}\n# b\ntc_0 {tc}\nperiod_0 {period}\np_0 {rp_rstar}\ncosi_0 0.001\n# dilution\n{dilute_str}'
 
     if outpath[-1] == '/':
         outpath = outpath[:-1]

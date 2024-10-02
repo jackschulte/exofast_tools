@@ -1,13 +1,17 @@
 import numpy as np
 import pandas as pd
 
-def generate_pro_file(toi, ticid, exptimes, nplanets=1, nstars=1, outpath='./'):
+def generate_pro_file(toi, ticid, exptimes, tess_lcs, nplanets=1, nstars=1, outpath='./'):
     '''
     Generates the EXOFASTv2 procedures file to start a fit, assuming that transits and RVs are both being fit and that the RV fit is eccentric and has a linear slope.
 
     toi: TOI id (numbers only)
     ticid: TIC id (numbers only)
     exptimes: An array containing the exposure time in minutes of each lightcurve by index. E.g. [30, 10, 2, 2, 2]
+    tess_lcs: An array containing booleans to determine which lightcurve is a tess lightcurve by index. E.g. [1, 1, 0, 0, 1]
+    nplanets: The number of planets in the system.
+    nstars: The number of stars in the system.
+    outpath: Directory to send the generated procedures file.
     '''
 
     # Create ninterps array using Jason's recommended strategy
@@ -25,6 +29,7 @@ def generate_pro_file(toi, ticid, exptimes, nplanets=1, nstars=1, outpath='./'):
     
     exptimes_str = str(exptimes)
     ninterps_str = str(ninterps)
+    tess_lcs_str = str(tess_lcs)
 
 
     boilerplate = f'''pro fittoi{toi}, debug=debug, verbose=verbose, maxsteps=maxsteps, nthin=nthin, $
@@ -38,7 +43,7 @@ exofastv2, nplanets={nplanets}, nstars={nstars}, tranpath='n2*.dat', $
         debug=debug, verbose=verbose, nthread=nthread, mistsedfile='{ticid}.sed', /fitslope, $
     exptime={exptimes_str}, $
     ninterp={ninterps_str}, $
-    fitdilute=['TESS']
+    fitdilute={tess_lcs_str}
 
 
 end'''
