@@ -152,7 +152,7 @@ def grab_metallicity(ticid, sigma=1, weighted=True, source='exofop', tres_userna
 
     return mean_feh, width
 
-def grab_all_priors(TOI, tess_lcs, feh_sigma=1, feh_weighted=True, outpath='.', source='exofop', tres_username=None, tres_password=None, verbose=False):
+def grab_all_priors(TOI, tess_lcs, feh_sigma=1, feh_weighted=True, outpath='.', feh_source='exofop', tres_username=None, tres_password=None, verbose=False):
     '''
     Grabs metallicity and dilution priors and ephemeris starting points for a given TOI and outputs it into a text file in EXOFASTv2 format.
 
@@ -161,7 +161,7 @@ def grab_all_priors(TOI, tess_lcs, feh_sigma=1, feh_weighted=True, outpath='.', 
     feh_sigma: the number of standard deviations to use as your metallicity prior width
     feh_weighted: whether or not to weight your average metallicity by the spectral SNR
     outpath: the path to the generated prior text file. Defaults to the current working directory.
-    source: Either 'exofop' or 'tres'. 'exofop' pulls from the available metallicities on ExoFOP-TESS, while 'tres' pulls from Lars Buchhave's planet candidate site.
+    feh_source: Either 'exofop' or 'tres'. 'exofop' pulls from the available metallicities on ExoFOP-TESS, while 'tres' pulls from Lars Buchhave's planet candidate site.
     tres_username: Your username for tess.exoplanets.dk
     tres_password: Your password for tess.exoplanets.dk
     toi_id: The target's TOI id. Ex: 'TOI-1855'
@@ -181,7 +181,10 @@ def grab_all_priors(TOI, tess_lcs, feh_sigma=1, feh_weighted=True, outpath='.', 
     rp_rstar = np.sqrt(depth * 10**(-6))
 
     print(f'Starting points:\nTc = {tc}\nPeriod = {period}\nRp/Rs = {rp_rstar}')
-    feh, feh_width = grab_metallicity(ticid, sigma=feh_sigma, weighted=feh_weighted, source=source, tres_username=tres_username, tres_password=tres_password, toi_id = TOI, verbose=verbose)
+    if feh_source != None:
+        feh, feh_width = grab_metallicity(ticid, sigma=feh_sigma, weighted=feh_weighted, source=feh_source, tres_username=tres_username, tres_password=tres_password, toi_id = TOI, verbose=verbose)
+    else:
+        feh, feh_width = 0, 0.5
     dilute_sigma = grab_dilution(ticid)
 
     dilution_indices = [i for i, x in enumerate(tess_lcs)]
