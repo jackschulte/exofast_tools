@@ -24,6 +24,9 @@ def grab_dilution(ticid):
     columns = ['TIC', 'Rcont']
     Vizier_search = Vizier(columns=columns)
     result = Vizier_search.query_object(ticid, catalog='IV/39/tic82', radius=2 * u.arcsec)[0]
+    if len(result) > 1:
+        result = Vizier_search.query_object(ticid, catalog='IV/39/tic82', radius=1 * u.arcsec)[0]
+        print('WARNING: Multiple sources within 2 arcseconds of the target. Re-constraining to 1 arcsec radius.')
     target_df = result.to_pandas()
     contam_ratio = target_df.Rcont[0]
     dilute_sigma = 0.1 * (contam_ratio / (1 + contam_ratio))
@@ -193,7 +196,7 @@ def grab_all_priors(TOI, tess_lcs, feh_sigma=1, feh_weighted=True, outpath='.', 
         if i == 0:
             dilute_str += f'dilute 0.0 {dilute_sigma}'
         else:
-            dilute_str += f'\ndilute_{i} 0.0 {dilute_sigma}'
+            dilute_str += f'\ndilute_{i} dilute' # this uses linkpars to link the dilution from the first lightcurve
     priorstring = f'# spectroscopic metallicity\nfeh {feh} {feh_width}\n# b\ntc_0 {tc}\nperiod_0 {period}\np_0 {rp_rstar}\ncosi_0 0.001\n# dilution\n{dilute_str}'
 
     if outpath[-1] == '/':
