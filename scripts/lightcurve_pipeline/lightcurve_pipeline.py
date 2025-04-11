@@ -13,6 +13,7 @@ from scipy import stats
 import matplotlib.pyplot as plt
 import os
 from astropy.time import Time
+from io import StringIO
 
 # only need these if wanting to look up values through code rather than entering them manually
 import requests
@@ -191,26 +192,53 @@ def get_params(system,planet,published=True,target=None):
         
         page = requests.get(url) # downloads raw text of the parameter table
 
-        paramtable = str(page.content)
+        paramtable_str = str(page.content) 
+        paramtable_str = paramtable_str.replace("\\n", "\n")  # Replace escaped newlines with actual newlines
+        paramtable_str = paramtable_str.strip() # Remove leading/trailing whitespace
         
-        # the following line uses a regular expression to grab the params. If ExoFOP changes how they format the table, this will
-        # need to be changed. For a visual representation of regular expressions, see https://regex101.com/.
-        parameters = re.findall(\
-        "TOI \d+\.\d+\|+(\d*\.*\d*)\|\d*\.*\d+\|(\d*\.*\d+)\|\d*\.*\d*\|\d*\.*\d*\|\d*\.*\d*\|(\d*\.*\d*)\|\d*\.*\d*\|(\d*\.*\d*)", paramtable)
-        if parameters == []:
-            parameters = re.findall(\
-            "\|+(\d*\.*\d*)\|\d*\.*\d+\|(\d*\.*\d+)\|\d*\.*\d*\|\d*\.*\d*\|\d*\.*\d*\|(\d*\.*\d*)\|\d*\.*\d*\|(\d*\.*\d*)\|\d*\.*\d+\|\d*\.*\d+\|\d*\.*\d+\|\d*\.*\d+\|\d*\.*\d+\|(\d*\.*\d+)\|", paramtable)
-        paramlist = list(parameters[0]) # converts a list containing one tuple to a list of all 4 parameters
+        paramtable = pd.read_csv(StringIO(paramtable_str.strip()), sep='|') # read the table into a pandas dataframe
+        paramtable.rename(columns={'b\'Table': 'Table'}, inplace=True)
+        print(f'Available ExoFOP tables: {list(paramtable.Table)}. Defaulting to {list(paramtable.Table)[0]}')
         
-        period = float(paramlist[1]) * u.day # in JD
-        tc = float(paramlist[0]) # in JD
-        t14 = float(paramlist[3]) * u.hr # in hrs
-        if paramlist[2] == '': # accounting for cases where only Rp/R* is reported
-            Rp_Rstar = float(paramlist[4]) # Rp/R*
-            depth = Rp_Rstar**2
-        else:
-            depth = float(paramlist[2]) / 1e6 # unitless (division by 1e6 is removing ppm)
+        num_tables = len(paramtable.Table)
 
+        # Generalized handling for 'Period (days)'
+        for i in range(num_tables):
+            if not np.isnan(paramtable['Period (days)'][i]):
+                period = paramtable['Period (days)'][i] * u.day
+                break
+        else:
+            raise ValueError(f'No period found in the table for TIC {TIC}. Please check ExoFOP.')
+
+        # Generalized handling for 'Epoch (BJD)'
+        for i in range(num_tables):
+            if not np.isnan(paramtable['Epoch (BJD)'][i]):
+                tc = paramtable['Epoch (BJD)'][i]
+                break
+        else:
+            raise ValueError(f'No Tc found in the table for TIC {TIC}. Please check ExoFOP.')
+
+        # Generalized handling for 'Duration (hrs)'
+        for i in range(num_tables):
+            if not np.isnan(paramtable['Duration (hrs)'][i]):
+                t14 = paramtable['Duration (hrs)'][i] * u.hour
+                break
+        else:
+            raise ValueError(f'No t14 found in the table for TIC {TIC}. Please check ExoFOP.')
+
+        # Generalized handling for 'Depth (ppm)' and fallback to 'Rad_p/Rad_s'
+        for i in range(num_tables):
+            if not np.isnan(paramtable['Depth (ppm)'][i]):
+                depth = paramtable['Depth (ppm)'][i] / 1e6
+                break
+        else:
+            for i in range(num_tables):
+                if not np.isnan(paramtable['Rad_p/Rad_s'][i]):
+                    print(f'No depth found in the table for TIC {TIC}. Using Rp/R* instead.')
+                    depth = paramtable['Rad_p/Rad_s'][i]**2
+                    break
+            else:
+                raise ValueError(f'No depth or Rp/R* found in the table for TIC {TIC}. Please check ExoFOP.')
         
     return period, tc, t14, depth
 
