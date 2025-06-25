@@ -60,7 +60,7 @@ def generate_SLURM_file(toi, ncpu = 20, runtime = 2, ttbuffer = 0.25, email = 'j
     ttbuffer_seconds = ttbuffer * 24 * 60 * 60
     runtime_seconds_ttbuffer = int(runtime_seconds - ttbuffer_seconds)
 
-    boilerplate = f'''#!/bin/bash
+    boilerplate = f'''#!/bin/bash --login
 
 #SBATCH --account=exoplanet_lab # Set this to charge cpu-hours to buy-in account
 # #SBATCH --nodelist="acm-007"    # Set this job to run on the buy-in node
