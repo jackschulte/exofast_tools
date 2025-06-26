@@ -194,9 +194,9 @@ def grab_all_priors(TOI, tess_lcs, feh_sigma=1, feh_weighted=True, outpath='.', 
     dilute_str = ''
     for i in dilution_indices:
         if i == 0:
-            dilute_str += f'dilute 0.0 {dilute_sigma}'
+            dilute_str += f'dilute_0 0.0 {dilute_sigma}'
         else:
-            dilute_str += f'\ndilute_{i} dilute' # this uses linkpars to link the dilution from the first lightcurve
+            dilute_str += f'\ndilute_{i} dilute_0 0' # this uses linkpars to link the dilution from the first lightcurve
     priorstring = f'# spectroscopic metallicity\nfeh {feh} {feh_width}\n# b\ntc_0 {tc}\nperiod_0 {period}\np_0 {rp_rstar}\ncosi_0 0.001\n# dilution\n{dilute_str}'
 
     if outpath[-1] == '/':
