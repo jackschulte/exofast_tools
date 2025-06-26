@@ -74,7 +74,7 @@ def dilute(contam):
     
     '''
     Returns dilution term for a given TESS contamination ratio (listed at top left on EXOFOP).
-    Include this in the prior file as: dilute_1 0.0 dilute_term
+    Include this in the prior file as e.g. dilute_0 0.0 dilute_term
     '''
     
     return (contam/(1+contam))*0.1
@@ -100,7 +100,6 @@ def find_num(number):
                 break
         ii += 1                
     return float(number[:ii])
-
 
 def get_array(arr):
     
@@ -247,7 +246,7 @@ def get_params(system,planet,published=True,target=None):
 def create_light_curve(target, author, sector, period=None, duration=None, tc=None, targetname=None, 
     exposure = None,multisector = False, save = False, plot=True, binlc=False, binwidth = None, auto=False,
     system = None, planet = None, qualityFlag = False, depth = None, published = True, omit_transit_index=None,
-    keep_secondary_eclipse = False, ecosw = 'circular', t14s = None, outputdir = 'None', outputfiles = 'all'):
+    keep_secondary_eclipse = False, ecosw = 'circular', t14s = None, undeblend=False, outputdir = 'None', outputfiles = 'all'):
     
     '''
     Create light curve files - currently for TESS only. If only a single sector is needed, use 
@@ -276,6 +275,7 @@ def create_light_curve(target, author, sector, period=None, duration=None, tc=No
     keep_secondary_eclipse: a boolean to choose whether or not to mask the secondary eclipse in the flattening and keep it in the chopped lightcurve. If True, ecosw and t14s must also be given
     ecosw: the product of the planet's eccentricity and the cosine of omega. If 'circular' is passed, ecosw will be zero
     t14s: the secondary eclipse duration as output from exofast (in days). If None, then the transit duration will be used
+    undeblend: a boolean to choose whether or not to undo the deblending of the lightcurve
     outputdir: A string of the path to the directory where the files will be saved
     outputfiles: An array of the files that you wish to be generated. Options include: plot, fullnotflat, fullflat, fullnotrans, slimflat, and individual. Defaults to 'all'
     '''
@@ -322,7 +322,16 @@ def create_light_curve(target, author, sector, period=None, duration=None, tc=No
     
     if auto == True:
         period,tc, duration,depth = get_params(targetname,planet,published=published,target=target)
-        
+
+    if undeblend == True:
+        from astroquery.vizier import Vizier # Vizier is only needed to collect the contamination ratio
+        print('Undeblending light curve using the contamination ratio from the TIC.')
+        v = Vizier(columns=['TIC', 'Ncont', 'Rcont', '_r'], catalog='IV/39/tic82').query_object(target, radius=2 * u.arcsec)[0]
+        if len(v) > 1:
+            print('WARNING: Multiple sources within 2 arcseconds of the target. Choosing the contamination ratio of the closest source.')
+            v = v[np.argmin(v['_r'])]
+        contam_ratio = v['Rcont']
+        targetinfo *= (1.0 + contam_ratio)
     
     #################
     
@@ -337,7 +346,9 @@ def create_light_curve(target, author, sector, period=None, duration=None, tc=No
     
     #Creating target time and flux information
     time = np.array(targetinfo.time.value + 2457000)
-    flux = np.array(targetinfo.flux.value)/np.median(np.array(targetinfo.flux.value))
+    flux = np.array(targetinfo.flux.value)
+    # median normalizing the flux
+    flux = flux/np.nanmedian(flux)
     
     #Phase folding the light curve to identify transit properties
     phase = (time-tc)/period-np.floor((time-tc)/period)
