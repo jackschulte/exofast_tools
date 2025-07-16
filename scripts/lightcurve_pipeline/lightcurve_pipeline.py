@@ -323,15 +323,15 @@ def create_light_curve(target, author, sector, period=None, duration=None, tc=No
     if auto == True:
         period,tc, duration,depth = get_params(targetname,planet,published=published,target=target)
 
-    if undeblend == True:
-        from astroquery.vizier import Vizier # Vizier is only needed to collect the contamination ratio
-        print('Undeblending light curve using the contamination ratio from the TIC.')
-        v = Vizier(columns=['TIC', 'Ncont', 'Rcont', '_r'], catalog='IV/39/tic82').query_object(target, radius=2 * u.arcsec)[0]
-        if len(v) > 1:
-            print('WARNING: Multiple sources within 2 arcseconds of the target. Choosing the contamination ratio of the closest source.')
-            v = v[np.argmin(v['_r'])]
-        contam_ratio = v['Rcont']
-        targetinfo *= (1.0 + contam_ratio)
+    # if undeblend == True:
+    #     from astroquery.vizier import Vizier # Vizier is only needed to collect the contamination ratio
+    #     print('Undeblending light curve using the contamination ratio from the TIC.')
+    #     v = Vizier(columns=['TIC', 'Ncont', 'Rcont', '_r'], catalog='IV/39/tic82').query_object(target, radius=2 * u.arcsec)[0]
+    #     if len(v) > 1:
+    #         print('WARNING: Multiple sources within 2 arcseconds of the target. Choosing the contamination ratio of the closest source.')
+    #         v = v[np.argmin(v['_r'])]
+    #     contam_ratio = v['Rcont']
+    #     targetinfo *= (1.0 + contam_ratio)
     
     #################
     
@@ -346,7 +346,10 @@ def create_light_curve(target, author, sector, period=None, duration=None, tc=No
     
     #Creating target time and flux information
     time = np.array(targetinfo.time.value + 2457000)
-    flux = np.array(targetinfo.flux.value)
+    if undeblend == False:
+        flux = np.array(targetinfo.flux.value)
+    else:
+        flux = np.array(targetinfo.sap_flux.value)
     # median normalizing the flux
     flux = flux/np.nanmedian(flux)
     
