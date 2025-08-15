@@ -35,7 +35,6 @@ def generate_pro_file(toi, ticid, exptimes, tess_lcs, nplanets=1, nstars=1, outp
     boilerplate = f'''pro fittoi{toi}, debug=debug, verbose=verbose, maxsteps=maxsteps, nthin=nthin, $
 nthread=nthread, outpath=outpath, maxtime=maxtime
 
-;; Fit using the Torres relation
 exofastv2, nplanets={nplanets}, nstars={nstars}, tranpath='n2*.dat', $
         rvpath='*.rv',priorfile='{ticid}.priors', $
         prefix='./fitresults/{ticid}.', maxsteps=maxsteps, $
