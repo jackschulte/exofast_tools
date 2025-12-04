@@ -117,7 +117,7 @@ def remake_rvfile(path, units=u.km/u.s, output_filename='output.rv', verbose=Fal
     if download_rvs == True:
         download_TRES_data(ticid=ticid, username=username, password=password, output_filename=path, verbose=verbose, instrument=instrument)
 
-    input_data = pd.read_csv(path, sep='\s+', header=0)
+    input_data = pd.read_csv(path, sep=r'\s+', header=0)
 
     vrad_units = np.array(input_data.vrad) * units
     svrad_units = np.array(input_data.svrad) * units

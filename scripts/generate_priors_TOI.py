@@ -139,7 +139,7 @@ def grab_metallicity(ticid, sigma=1, weighted=True, source='exofop', tres_userna
 
         # Create a DataFrame
         data = StringIO(spc_table)
-        df = pd.read_csv(data, header=0, sep='\s+')
+        df = pd.read_csv(data, header=0, sep=r'\s+')
         df.dropna(inplace=True)
         df_spc = df[df.method=='SPC2.9']
         
