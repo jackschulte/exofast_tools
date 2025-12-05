@@ -494,7 +494,7 @@ def create_light_curve(target, author, sector, period=None, duration=None, tc=No
         plt.scatter(time, flat_flux, facecolors = 'tan', s = 100, alpha = 0.5, edgecolors='#000000',label='Flat Flux')
         plt.title("%s: Sector %s, %ss %s - Flattened, Masked Flux Vs. Original Flux" % \
                   (targetname,sector,int(exposure),binflag)) 
-        plt.xlabel("Time - 2457000 [BTJD days]")
+        plt.xlabel("Time [BJD days]")
         plt.ylabel("Normalized Flux")
         plt.legend()
 
@@ -502,7 +502,7 @@ def create_light_curve(target, author, sector, period=None, duration=None, tc=No
         fig2, ax2 = plt.subplots(figsize=(16, 8))
         plt.scatter(time[in_transit], flat_flux[in_transit])
         plt.title("%s: Sector %s, %ss %s - Individual Transit Flux" % (targetname,sector,int(exposure),binflag))
-        plt.xlabel("Time - 2457000 [BTJD days]")
+        plt.xlabel("Time [BJD days]")
         plt.ylabel("Normalized Flux")
         #plt.ylim(0.992,1.01)
         #plt.xlim(2.4584e6+40.25,2.4584e6+41)
@@ -534,7 +534,7 @@ def create_light_curve(target, author, sector, period=None, duration=None, tc=No
             fig5, ax5 = plt.subplots(figsize=(16, 8))
             plt.scatter(eclipse_phase[in_eclipse], flat_flux[in_eclipse])
             plt.title("%s: Sector %s, %ss %s - Secondary Eclipse" % (targetname,sector,int(exposure),binflag))
-            plt.xlabel("Time - 2457000 [BTJD days]")
+            plt.xlabel("Time [BJD days]")
             plt.ylabel("Normalized Flux")
         
 
