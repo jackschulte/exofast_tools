@@ -462,7 +462,7 @@ def create_light_curve(target, author, sector, period=None, duration=None, tc=No
     if omit_transit_index != None:
         for i in range(len(omit_transit_mintimeindex)):
             # cutting individual bad transits from the array of "in transit" indices
-            in_transit_array = np.setdiff1d(in_transit_array, range(omit_transit_mintimeindex[i], omit_transit_maxtimeindex[i]))
+            in_transit_array = np.setdiff1d(in_transit_array, range(omit_transit_mintimeindex[i], omit_transit_maxtimeindex[i] + 1))
     
     in_transit = in_transit_array.tolist()
     # the following if statement is to mute a warning. This may(?) have to be changed in the future and there might be a better way to do this

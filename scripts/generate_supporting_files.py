@@ -63,7 +63,7 @@ def generate_SLURM_file(toi, ncpu = 20, runtime = 2, ttbuffer = 0.25, email = 'j
 
 #SBATCH --account=exoplanet_lab # Set this to charge cpu-hours to buy-in account
 # #SBATCH --nodelist="acm-007"    # Set this job to run on the buy-in node
-#SBATCH --time={runtime_minutes}              # Set the runtime limit for this (minutes)
+#SBATCH --time={int(runtime_minutes)}              # Set the runtime limit for this (minutes)
 #SBATCH --nodes=1               # Set to one node (for IDL license reasons)
 #SBATCH --ntasks=1             # Number of tasks this job will run
 #SBATCH --cpus-per-task={ncpu}       # Number of cores needed for each task
