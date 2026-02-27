@@ -87,7 +87,11 @@ source /mnt/research/Exoplanet_Lab/source.sh
 
 # {runtime} days for SLURM, {runtime - ttbuffer} days for EXOFASTv2
 
-wait'''
+wait
+
+cd fitresults
+makepdfs.sh
+'''
 
     filename = f'SLURM_toi{toi}.sb'
     with open(outpath + filename, 'w') as file:
