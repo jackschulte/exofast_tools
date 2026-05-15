@@ -291,6 +291,7 @@ def create_light_curve(target, author, sector, period=None, duration=None, tc=No
        
     if multisector == True and exposure != None:
         targetinfo = targetinfo[np.where(targetinfo.table['t_exptime']==exposure)].download_all().stitch()
+        sector = 'Multi'
 
     elif multisector == False and exposure != None:
         targetinfo = targetinfo[np.where(targetinfo.table['t_exptime']==exposure)].download()
