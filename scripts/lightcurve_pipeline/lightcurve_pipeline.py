@@ -289,9 +289,12 @@ def create_light_curve(target, author, sector, period=None, duration=None, tc=No
     #Finding and downloading target information and light curve
     targetinfo = lk.search_lightcurve(target, author = author, sector = sector)    
        
-    if multisector == True or (multisector == False and exposure != None):
+    if multisector == True and exposure != None:
+        targetinfo = targetinfo[np.where(targetinfo.table['t_exptime']==exposure)].download_all().stitch()
+
+    elif multisector == False and exposure != None:
         targetinfo = targetinfo[np.where(targetinfo.table['t_exptime']==exposure)].download()
-    
+
     # if no exposure time is specified download first lk entry by default
     elif multisector == False and exposure == None:
         exposure =targetinfo.table['t_exptime'][0]
