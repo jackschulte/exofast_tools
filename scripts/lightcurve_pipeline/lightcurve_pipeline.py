@@ -376,11 +376,11 @@ def create_light_curve(target, author, sector, period=None, duration=None, tc=No
     if keep_secondary_eclipse == True:
         if ecosw == 'circular':
             ecosw = 0
-        time_eclipse = 0.5 * (1 + 4*ecosw)
+        time_eclipse = 0.5 * (1 + 4*ecosw) # determine the phase of the secondary eclipse based on ecosw
         if t14s == None:
             in_eclipse = np.where((eclipse_phase > (time_eclipse - transit_size_phase/2)) & (eclipse_phase < (time_eclipse + transit_size_phase/2)))
         else:
-            eclipse_size_phase = (t14s/period+(buffer/24)/period)*3
+            eclipse_size_phase = (t14s/period+(buffer/24)/period)*3 # casting a wide net for the eclipse duration
             in_eclipse = np.where((eclipse_phase > (time_eclipse - eclipse_size_phase/2)) & (eclipse_phase < (time_eclipse + eclipse_size_phase/2)))
     
     #Creating masks to exclude transits from the flattening process
@@ -537,8 +537,11 @@ def create_light_curve(target, author, sector, period=None, duration=None, tc=No
         if keep_secondary_eclipse == True:
             fig5, ax5 = plt.subplots(figsize=(16, 8))
             plt.scatter(eclipse_phase[in_eclipse], flat_flux[in_eclipse])
+            # plot binned data
+            binned_phase, binned_flux = bindata(eclipse_phase[in_eclipse], flat_flux[in_eclipse], 0.01)
+            plt.scatter(binned_phase, binned_flux, color='red', s=100)
             plt.title("%s: Sector %s, %ss %s - Secondary Eclipse" % (targetname,sector,int(exposure),binflag))
-            plt.xlabel("Time [BJD days]")
+            plt.xlabel("Phase")
             plt.ylabel("Normalized Flux")
         
 
