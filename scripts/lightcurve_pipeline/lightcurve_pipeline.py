@@ -418,8 +418,6 @@ def create_light_curve(target, author, sector, period=None, duration=None, tc=No
     lc_transits = []
     array_names = []
     in_transit_n = []
-    omit_transit_mintimeindex = []
-    omit_transit_maxtimeindex = []
     floored_time = np.floor(((time)-tc)/period)
     unique_epochs = np.unique(floored_time)
     
@@ -432,50 +430,49 @@ def create_light_curve(target, author, sector, period=None, duration=None, tc=No
     for j in transit_times:                  #Only including transits within the observation timeframe
         if j > time[0] and j < time[-1]:
             lc_transits.append(j)
-    #print('lc_transits: ', lc_transits)
-    for current_time in lc_transits:                        
-        index = lc_transits.index(current_time)         #Creating an array for naming each available transit
-        if omit_transit_index == None:
-            transit_name = 'in_transit_%s' % index
-            array_names.append(transit_name)
-        
-            #Creating an array for where each transit can be found
-            #in_transit_n.append(np.where((time>i-3/2*transit_duration-buffer) & (time<i+3/2*transit_duration+buffer)))  
-            low_cut = (1.5*transit_duration-buffer)/24.
-            hi_cut = (1.5*transit_duration+buffer)/24.
-        
-            in_transit_n.append(np.where((time>current_time-low_cut) & (time<current_time+hi_cut)))
-        elif index not in omit_transit_index: # only append new names if it isn't an omitted transit (repeat of previous code block)
-            transit_name = 'in_transit_%s' % index
-            array_names.append(transit_name)
-        
-            low_cut = (1.5*transit_duration-buffer)/24.
-            hi_cut = (1.5*transit_duration+buffer)/24.
-        
-            in_transit_n.append(np.where((time>current_time-low_cut) & (time<current_time+hi_cut)))
-        elif index in omit_transit_index:
-            # saving the min and max indices of the transits to be omitted
-            low_cut = (1.5*transit_duration-buffer)/24.
-            hi_cut = (1.5*transit_duration+buffer)/24.
+    if omit_transit_index is None:
+        omit_transit_index = []
+    elif isinstance(omit_transit_index, int):
+        omit_transit_index = [omit_transit_index]
+    else:
+        omit_transit_index = list(omit_transit_index)
 
-            try: # sometimes these regions will be empty and a ValueError will be raised
-                omit_transit_mintimeindex.append(np.min(np.where((time>current_time-low_cut) & (time<current_time+hi_cut))))
-                omit_transit_maxtimeindex.append(np.max(np.where((time>current_time-low_cut) & (time<current_time+hi_cut))))
-            except ValueError:
-                pass
-    if omit_transit_index != None:
-        for i in range(len(omit_transit_mintimeindex)):
-            # cutting individual bad transits from the array of "in transit" indices
-            in_transit_array = np.setdiff1d(in_transit_array, range(omit_transit_mintimeindex[i], omit_transit_maxtimeindex[i] + 1))
-    
+    low_cut = (3*transit_duration-buffer)/24.
+    hi_cut = (3*transit_duration+buffer)/24.
+    omit_mask = np.zeros(len(time), dtype=bool)
+
+    for index, current_time in enumerate(lc_transits):
+        if index in omit_transit_index:
+            omit_mask |= (time >= current_time-low_cut) & (time <= current_time+hi_cut)
+
+    if np.any(omit_mask):
+        time = time[~omit_mask]
+        flux = flux[~omit_mask]
+        flat_flux = flat_flux[~omit_mask]
+        phase = phase[~omit_mask]
+        eclipse_phase = eclipse_phase[~omit_mask]
+
+    for index, current_time in enumerate(lc_transits):
+        if index in omit_transit_index:
+            continue
+
+        transit_name = 'in_transit_%s' % index
+        array_names.append(transit_name)
+        in_transit_n.append(np.where((time>current_time-low_cut) & (time<current_time+hi_cut)))
+
+    in_transit = np.where((phase>-transit_size_phase/2) & (phase<transit_size_phase/2))
+    out_of_transit = np.where(~((phase>-transit_size_phase/2) & (phase<transit_size_phase/2)))
+    in_transit_array = np.array(in_transit)
     in_transit = in_transit_array.tolist()
-    # the following if statement is to mute a warning. This may(?) have to be changed in the future and there might be a better way to do this
-    if omit_transit_index == None:
+    # Normalize in_transit to a tuple of index arrays/lists so later code can append eclipse indices safely.
+    if len(in_transit) == 1 and isinstance(in_transit[0], list):
         in_transit = tuple(in_transit)
-    
+    else:
+        in_transit = (in_transit,)
+
     #print('array_names: ',array_names)
     #print('in_transit_n: ', in_transit_n)
-    
+
     #Combining both the name array and location array into a comprehensive dictionary 
     # (a dataset for each transit)
     final_transits = dict(zip(array_names, in_transit_n))  
@@ -484,6 +481,12 @@ def create_light_curve(target, author, sector, period=None, duration=None, tc=No
     error_value = scipy.stats.median_abs_deviation(flat_flux[out_of_transit],nan_policy='omit')/0.68   #error per point
     print('per-point error value', error_value)
     errors = np.full((len(time), 1), error_value, dtype=float)
+
+    if keep_secondary_eclipse == True:
+        if t14s is None:
+            in_eclipse = np.where((eclipse_phase > (time_eclipse - transit_size_phase/2)) & (eclipse_phase < (time_eclipse + transit_size_phase/2)))
+        else:
+            in_eclipse = np.where((eclipse_phase > (time_eclipse - eclipse_size_phase/2)) & (eclipse_phase < (time_eclipse + eclipse_size_phase/2)))
     
     # comparison of rms to transit depth
     if auto == True:
