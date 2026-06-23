@@ -246,7 +246,7 @@ def get_params(system,planet,published=True,target=None):
 def create_light_curve(target, author, sector, period=None, duration=None, tc=None, targetname=None, 
     exposure = None,multisector = False, save = False, plot=True, binlc=False, binwidth = None, auto=False,
     system = None, planet = None, qualityFlag = False, depth = None, published = True, omit_transit_index=None,
-    keep_secondary_eclipse = False, ecosw = 'circular', t14s = None, undeblend=False, outputdir = 'None', outputfiles = 'all'):
+    keep_secondary_eclipse = False, e = 0, w=0, t14s = None, undeblend=False, outputdir = 'None', outputfiles = 'all'):
     
     '''
     Create light curve files - currently for TESS only. If only a single sector is needed, use 
@@ -273,7 +273,8 @@ def create_light_curve(target, author, sector, period=None, duration=None, tc=No
     published: Boolean for whether or not the planet has been published. Reverts to ExoFOP if false.
     omit_transit_index: the index of the transit(s) you wish to remove from the full lightcurve files
     keep_secondary_eclipse: a boolean to choose whether or not to mask the secondary eclipse in the flattening and keep it in the chopped lightcurve. If True, ecosw and t14s must also be given
-    ecosw: the product of the planet's eccentricity and the cosine of omega. If 'circular' is passed, ecosw will be zero
+    e: the eccentricity of the planet's orbit
+    w: the argument of periastron in degrees
     t14s: the secondary eclipse duration as output from exofast (in days). If None, then the transit duration will be used
     undeblend: a boolean to choose whether or not to undo the deblending of the lightcurve
     outputdir: A string of the path to the directory where the files will be saved
@@ -374,9 +375,11 @@ def create_light_curve(target, author, sector, period=None, duration=None, tc=No
 
     # Optionally masking out the secondary eclipse
     if keep_secondary_eclipse == True:
-        if ecosw == 'circular':
-            ecosw = 0
-        time_eclipse = 0.5 * (1 + 4*ecosw) # determine the phase of the secondary eclipse based on ecosw
+        w = np.radians(w) # convert w to radians
+        g = e * np.sin(w)
+        h = e * np.cos(w)
+        # determine eclipse time based on Sterne 1940 Eq 31'
+        time_eclipse = 0.5 + (1/np.pi) * ((h*np.sqrt(1-e**2))/(1-g**2) + np.arctan(h/np.sqrt(1-e**2)))
         if t14s == None:
             in_eclipse = np.where((eclipse_phase > (time_eclipse - transit_size_phase/2)) & (eclipse_phase < (time_eclipse + transit_size_phase/2)))
         else:
