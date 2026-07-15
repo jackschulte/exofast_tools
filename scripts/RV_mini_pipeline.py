@@ -119,6 +119,10 @@ def remake_rvfile(path, units=u.km/u.s, output_filename='output.rv', verbose=Fal
 
     input_data = pd.read_csv(path, sep=r'\s+', header=0)
 
+    # remove data from other instrument if present
+    if 'spec.' in input_data.columns:
+        input_data = input_data[input_data['spec.'] == instrument]
+
     vrad_units = np.array(input_data.vrad) * units
     svrad_units = np.array(input_data.svrad) * units
     
