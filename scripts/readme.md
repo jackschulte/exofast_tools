@@ -24,6 +24,10 @@ A short notebook to generate a TESS observations summary table for a given set o
 
 A short notebook to generate a follow-up time-series observations summary table from information posted to ExoFOP.
 
+## create_rv_summary_table.ipynb
+
+A short notebook to generate a summary of the RV observations, organized by TOI and instrument. Included in the table are the numbers of observations, median uncertainties (to one decimal place), and the dates of the first and last observations in UTC.
+
 ## setup_fit.ipynb
 
 A master notebook that can be used to set up an EXOFASTv2 fit from start to finish.
