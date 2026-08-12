@@ -20,10 +20,6 @@ A script that generates a spectroscopic metallicity prior, TESS dilution prior, 
 
 A short notebook to generate a TESS observations summary table for a given set of TIC and TOI ids. By default, it assumes that you are using SPOC data where available, and QLP when SPOC data are not available.
 
-## create_followup_table.ipynb
-
-A short notebook to generate a follow-up time-series observations summary table from information posted to ExoFOP.
-
 ## create_rv_summary_table.ipynb
 
 A short notebook to generate a summary of the RV observations, organized by TOI and instrument. Included in the table are the numbers of observations, median uncertainties (to one decimal place), and the dates of the first and last observations in UTC.
